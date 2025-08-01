@@ -3,9 +3,12 @@ const {
   GatewayIntentBits,
   Partials,
   ActivityType,
+  EmbedBuilder,
 } = require("discord.js");
 const { CohereClient } = require("cohere-ai");
 require("dotenv").config();
+
+const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 
 const ALLOWED_GUILD_ID = process.env.ALLOWED_GUILD_ID;
 
@@ -150,6 +153,24 @@ client.on("messageCreate", async (message) => {
       }
     } else {
       await message.reply(botResponse);
+    }
+    // Log the conversation to the log channel if configured
+    if (LOG_CHANNEL_ID) {
+      try {
+        const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+        const logEmbed = new EmbedBuilder()
+          .setTitle("Conversation Log")
+          .addFields(
+            { name: "User", value: `${message.author.tag} (${message.author.id})`, inline: true },
+            { name: "Channel", value: isDM ? "Direct Message" : `${message.channel.name || message.channel.id}`, inline: true },
+            { name: "Question", value: userInput },
+            { name: "Answer", value: botResponse }
+          )
+          .setTimestamp();
+        await logChannel.send({ embeds: [logEmbed] });
+      } catch (err) {
+        console.error("Failed to send log embed:", err);
+      }
     }
   } catch (error) {
     console.error("❌ API error status:", error.status);
