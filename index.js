@@ -10,7 +10,9 @@ require("dotenv").config();
 
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 
-const ALLOWED_GUILD_ID = process.env.ALLOWED_GUILD_ID;
+const ALLOWED_GUILD_IDS = process.env.ALLOWED_GUILD_IDS
+  ? process.env.ALLOWED_GUILD_IDS.split(",")
+  : [];
 
 console.log("✅ Environment loaded. Starting bot...");
 
@@ -92,22 +94,22 @@ client.on("messageCreate", async (message) => {
     userInput = message.content.replace(new RegExp(`<@!?${client.user.id}>`, "g"), "").trim();
   }
   const userId = message.author.id;
-  if (ALLOWED_GUILD_ID && isMention) {
+  if (ALLOWED_GUILD_IDS.length > 0 && isMention) {
+    if (!ALLOWED_GUILD_IDS.includes(message.guild.id)) {
+      console.warn(`❌ Message from unauthorized guild: ${message.guild.id}`);
+      await message.reply("❌ This server is not authorized. Please use this bot in an authorized server.");
+      return;
+    }
     try {
-      const guild = await client.guilds.fetch(ALLOWED_GUILD_ID);
+      const guild = await client.guilds.fetch(message.guild.id);
       await guild.members.fetch(userId);
-      if (message.guild.id !== ALLOWED_GUILD_ID) {
-        console.warn(`❌ Message from unauthorized guild: ${message.guild.id}`);
-        await message.reply("❌ This server is not authorized. Please use this bot in the authorized server.");
-        return;
-      }
     } catch (err) {
       console.warn(
-        `❌ Guild or member fetch failed for guild ${ALLOWED_GUILD_ID} and user ${userId}:`,
+        `❌ Member fetch failed for guild ${message.guild.id} and user ${userId}:`,
         err
       );
       await message.reply(
-        "❌ You and I must both be in an authorized server to chat. Please join the server and try again."
+        "❌ You and I must both be in an authorized server to chat. Please join an authorized server and try again."
       );
       return;
     }
