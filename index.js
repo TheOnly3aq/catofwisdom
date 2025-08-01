@@ -77,16 +77,27 @@ client.on("messageCreate", async (message) => {
   );
 
   if (message.author.bot) return;
-  if (message.channel.type !== 1) {
-    console.log("ℹ️ Message ignored: Not a DM.");
+  const isDM = message.channel.type === 1;
+  const isMention = message.mentions.has(client.user);
+  if (!isDM && !isMention) {
+    console.log("ℹ️ Message ignored: neither DM nor direct mention.");
     return;
   }
-
+  // Normalize user input: strip bot mention if present
+  let userInput = message.content;
+  if (isMention) {
+    userInput = message.content.replace(new RegExp(`<@!?${client.user.id}>`, "g"), "").trim();
+  }
   const userId = message.author.id;
-  if (ALLOWED_GUILD_ID) {
+  if (ALLOWED_GUILD_ID && isMention) {
     try {
       const guild = await client.guilds.fetch(ALLOWED_GUILD_ID);
       await guild.members.fetch(userId);
+      if (message.guild.id !== ALLOWED_GUILD_ID) {
+        console.warn(`❌ Message from unauthorized guild: ${message.guild.id}`);
+        await message.reply("❌ This server is not authorized. Please use this bot in the authorized server.");
+        return;
+      }
     } catch (err) {
       console.warn(
         `❌ Guild or member fetch failed for guild ${ALLOWED_GUILD_ID} and user ${userId}:`,
@@ -116,7 +127,7 @@ client.on("messageCreate", async (message) => {
     console.log("🧠 Sending request to Cohere...");
     const response = await cohere.chat({
       model: process.env.COHERE_MODEL || "command-r-plus",
-      message: message.content,
+      message: userInput,
       chatHistory: conversation,
       preamble:
         "You are a helpful and friendly Discord bot assistant. Keep your responses concise and engaging, suitable for a chat environment.",
@@ -128,7 +139,7 @@ client.on("messageCreate", async (message) => {
     console.log("✅ Cohere responded:", botResponse);
 
     conversation.push(
-      { role: "USER", message: message.content },
+      { role: "USER", message: userInput },
       { role: "CHATBOT", message: botResponse }
     );
 
