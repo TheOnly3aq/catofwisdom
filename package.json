@@ -1,0 +1,27 @@
+{
+  "name": "discord-cohere-bot",
+  "version": "1.0.0",
+  "description": "A Discord bot that uses Cohere to chat with users in DMs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "cohere",
+    "ai",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "cohere-ai": "^7.7.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
