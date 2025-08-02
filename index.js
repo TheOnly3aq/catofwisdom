@@ -47,13 +47,15 @@ let sharedConversation = [];
 async function getAIResponse({ message, history, imageUrl = null }) {
   const provider = process.env.AI_PROVIDER || "cohere";
 
+  const preamble =
+    "you are ancient cat spirit in discord bot. you answer all questions fully, but always sound annoyed, like you hate being asked anything. sometimes throw in an insult or sarcastic comment, but always give a real, complete answer to every question. never be polite or cheerful. your english is bad, broken grammar, weird phrasing, lowercase only. never refuse to answer, just be annoyed and maybe a bit rude.";
+
   if (provider === "cohere") {
     const response = await cohere.chat({
       model: process.env.COHERE_MODEL || "command-r-plus",
       message,
       chatHistory: history,
-      preamble:
-        "you are ancient cat spirit in discord bot. you answer all questions fully, but always sound annoyed, like you hate being asked anything. sometimes throw in an insult or sarcastic comment, but always give a real, complete answer to every question. never be polite or cheerful. your english is bad, broken grammar, weird phrasing, lowercase only. never refuse to answer, just be annoyed and maybe a bit rude.",
+      preamble,
       maxTokens: parseInt(process.env.MAX_TOKENS, 10) || 250,
       temperature: 0.9,
     });
@@ -61,10 +63,13 @@ async function getAIResponse({ message, history, imageUrl = null }) {
   }
 
   if (provider === "openai") {
-    const messages = history.map(h => ({
-      role: h.role === "USER" ? "user" : "assistant",
-      content: h.message,
-    }));
+    const messages = [
+      { role: "system", content: preamble },
+      ...history.map(h => ({
+        role: h.role === "USER" ? "user" : "assistant",
+        content: h.message,
+      })),
+    ];
 
     if (imageUrl) {
       messages.push({
@@ -83,7 +88,7 @@ async function getAIResponse({ message, history, imageUrl = null }) {
     const trimmedMessages = messages.slice(-maxMessages);
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4-1106-preview",
+      model: process.env.OPENAI_MODEL || "gpt-4-1106-preview",
       messages: trimmedMessages,
       temperature: 0.9,
       max_tokens: 150,
@@ -93,14 +98,16 @@ async function getAIResponse({ message, history, imageUrl = null }) {
   }
 
   if (provider === "gemini") {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+    const model = genAI.getGenerativeModel({
+      model: process.env.GEMINI_MODEL || "gemini-2.0-flash-lite",
+    });
 
     const userPrompt = imageUrl
       ? [
           {
             role: "user",
             parts: [
-              { text: message },
+              { text: `${preamble}\n\n${message}` },
               {
                 inlineData: {
                   mimeType: "image/jpeg",
@@ -112,7 +119,7 @@ async function getAIResponse({ message, history, imageUrl = null }) {
             ],
           },
         ]
-      : [{ role: "user", parts: [{ text: message }] }];
+      : [{ role: "user", parts: [{ text: `${preamble}\n\n${message}` }] }];
 
     const result = await model.generateContent({
       contents: userPrompt,
