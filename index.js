@@ -8,6 +8,7 @@ const {
 const { SlashCommandBuilder } = require("discord.js");
 const { CohereClient } = require("cohere-ai");
 const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 require("dotenv").config();
 
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
@@ -38,6 +39,8 @@ const cohere = new CohereClient({
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 let sharedConversation = [];
 
@@ -75,14 +78,48 @@ async function getAIResponse({ message, history, imageUrl = null }) {
       messages.push({ role: "user", content: message });
     }
 
+    // Limit total number of messages to avoid hitting context limit
+    const maxMessages = 30;
+    const trimmedMessages = messages.slice(-maxMessages);
+
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages,
+      model: "gpt-4-1106-preview",
+      messages: trimmedMessages,
       temperature: 0.9,
-      max_tokens: 250,
+      max_tokens: 150,
     });
 
     return response.choices[0].message.content;
+  }
+
+  if (provider === "gemini") {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+    const userPrompt = imageUrl
+      ? [
+          {
+            role: "user",
+            parts: [
+              { text: message },
+              {
+                inlineData: {
+                  mimeType: "image/jpeg",
+                  data: await fetch(imageUrl)
+                    .then(r => r.arrayBuffer())
+                    .then(b => Buffer.from(b).toString("base64"))
+                },
+              },
+            ],
+          },
+        ]
+      : [{ role: "user", parts: [{ text: message }] }];
+
+    const result = await model.generateContent({
+      contents: userPrompt,
+    });
+
+    const response = await result.response;
+    return response.text();
   }
 
   throw new Error(`Unsupported AI provider: ${provider}`);
