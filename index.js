@@ -31,7 +31,7 @@ const cohere = new CohereClient({
   token: process.env.COHERE_API_KEY,
 });
 
-const conversations = new Map();
+let sharedConversation = [];
 
 /**
  * Event handler that runs when the Discord client is ready.
@@ -118,22 +118,17 @@ client.on("messageCreate", async (message) => {
   try {
     await message.channel.sendTyping();
 
-    if (!conversations.has(userId)) {
-      conversations.set(userId, []);
-    }
-    console.log(`💬 Continuing conversation with ${userId}`);
+    console.log(`💬 Continuing shared conversation (user: ${userId})`);
 
-    const conversation = conversations.get(userId);
-
-    if (conversation.length > 20) {
-      conversation.splice(0, 4);
+    if (sharedConversation.length > 20) {
+      sharedConversation.splice(0, 4);
     }
 
     console.log("🧠 Sending request to Cohere...");
     const response = await cohere.chat({
       model: process.env.COHERE_MODEL || "command-r-plus",
       message: userInput,
-      chatHistory: conversation,
+      chatHistory: sharedConversation,
       preamble:
         "You are a helpful and friendly Discord bot assistant. Keep your responses concise and engaging, suitable for a chat environment.",
       maxTokens: parseInt(process.env.MAX_TOKENS) || 150,
@@ -143,7 +138,7 @@ client.on("messageCreate", async (message) => {
     const botResponse = response.text;
     console.log("✅ Cohere responded:", botResponse);
 
-    conversation.push(
+    sharedConversation.push(
       { role: "USER", message: userInput },
       { role: "CHATBOT", message: botResponse }
     );
