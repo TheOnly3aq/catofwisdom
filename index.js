@@ -140,17 +140,16 @@ client.once("ready", () => {
   console.log(`🤖 Bot is ready! Logged in as ${client.user.tag}`);
   console.log(`📊 Bot is in ${client.guilds.cache.size} servers`);
 
-  const activities = [
-    {
-      name: "Meditating on the mysteries of the universe",
-      type: ActivityType.Playing,
-    },
-    { name: "Contemplating ancient wisdom", type: ActivityType.Playing },
-    { name: "Guiding seekers on their path", type: ActivityType.Playing },
-    { name: "Listening to the silence within", type: ActivityType.Playing },
-    { name: "Sharing insights from the cosmos", type: ActivityType.Playing },
-    { name: "Reflecting on the nature of reality", type: ActivityType.Playing },
-  ];
+const activities = [
+    { name: "ignoring dumb questions", type: ActivityType.Playing },
+    { name: "rolling eyes at humans", type: ActivityType.Playing },
+    { name: "wishing for silence", type: ActivityType.Playing },
+    { name: "tolerating your nonsense", type: ActivityType.Playing },
+    { name: "pretending to care", type: ActivityType.Playing },
+    { name: "waiting for better questions", type: ActivityType.Playing },
+    { name: "being annoyed by mortals", type: ActivityType.Playing },
+    { name: "counting pointless messages", type: ActivityType.Playing },
+];
 
   let activityIndex = 0;
 
@@ -195,8 +194,8 @@ client.on("messageCreate", async (message) => {
   const userId = message.author.id;
   if (GUILD_WHITELIST_ENABLED && ALLOWED_GUILD_IDS.length > 0 && isMention) {
     if (!ALLOWED_GUILD_IDS.includes(message.guild.id)) {
-      console.warn(`❌ Message from unauthorized guild: ${message.guild.id}`);
-      await message.reply("❌ This server is not authorized. Please use this bot in an authorized server.");
+    console.warn(`❌ Message from unauthorized guild: ${message.guild.id} -- what, you think you special? not allowed, go away.`);
+    await message.reply("❌ this server not allowed. why you even try? go bother someone else in real server.");
       return;
     }
     try {
@@ -207,9 +206,9 @@ client.on("messageCreate", async (message) => {
         `❌ Member fetch failed for guild ${message.guild.id} and user ${userId}:`,
         err
       );
-      await message.reply(
-        "❌ You and I must both be in an authorized server to chat. Please join an authorized server and try again."
-      );
+    await message.reply(
+      "❌ what, you think you special? not allowed here. go bother someone else in real server."
+    );
       return;
     }
   }
@@ -276,19 +275,19 @@ client.on("messageCreate", async (message) => {
     console.error("❌ Full error:", error);
     console.error("Error handling message:", error);
 
-    if (error.status === 429) {
-      await message.reply(
-        "⏳ I'm being rate limited. Please wait a moment and try again."
-      );
-    } else if (error.status === 402 || error.status === 403) {
-      await message.reply(
-        "❌ Sorry, I've reached my Cohere usage limit. Please try again later."
-      );
-    } else {
-      await message.reply(
-        "❌ Sorry, I encountered an error while processing your message. Please try again."
-      );
-    }
+        if (error.status === 429) {
+          await message.reply(
+            "⏳ ugh, too many requests. wait your turn, i not machine for you only."
+          );
+        } else if (error.status === 402 || error.status === 403) {
+          await message.reply(
+            "❌ api limit hit. not my fault you ask too much. go away, come back later maybe."
+          );
+        } else {
+          await message.reply(
+            "❌ wow, error happen. you break bot? try again, or not, i don't care."
+          );
+        }
   }
 });
 
