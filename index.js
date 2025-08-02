@@ -98,35 +98,48 @@ async function getAIResponse({ message, history, imageUrl = null }) {
   }
 
   if (provider === "gemini") {
-    const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_MODEL || "gemini-2.0-flash-lite",
-    });
+    try {
+      const model = genAI.getGenerativeModel({
+        model: process.env.GEMINI_MODEL || "gemini-2.0-flash-lite",
+      });
 
-    const userPrompt = imageUrl
-      ? [
-          {
-            role: "user",
-            parts: [
-              { text: `${preamble}\n\n${message}` },
-              {
-                inlineData: {
-                  mimeType: "image/jpeg",
-                  data: await fetch(imageUrl)
-                    .then(r => r.arrayBuffer())
-                    .then(b => Buffer.from(b).toString("base64"))
+      const userPrompt = imageUrl
+        ? [
+            {
+              role: "user",
+              parts: [
+                { text: `${preamble}\n\n${message}` },
+                {
+                  inlineData: {
+                    mimeType: "image/jpeg",
+                    data: await fetch(imageUrl)
+                      .then(r => r.arrayBuffer())
+                      .then(b => Buffer.from(b).toString("base64")),
+                  },
                 },
-              },
-            ],
-          },
-        ]
-      : [{ role: "user", parts: [{ text: `${preamble}\n\n${message}` }] }];
+              ],
+            },
+          ]
+        : [{ role: "user", parts: [{ text: `${preamble}\n\n${message}` }] }];
 
-    const result = await model.generateContent({
-      contents: userPrompt,
-    });
+      const result = await model.generateContent({
+        contents: userPrompt,
+      });
 
-    const response = await result.response;
-    return response.text();
+      const response = await result.response;
+      return response.text();
+    } catch (err) {
+      console.warn("⚠️ Gemini provider failed, falling back to Cohere:", err);
+      const response = await cohere.chat({
+        model: process.env.COHERE_MODEL || "command-r-plus",
+        message,
+        chatHistory: history,
+        preamble,
+        maxTokens: parseInt(process.env.MAX_TOKENS, 10) || 250,
+        temperature: 0.9,
+      });
+      return response.text;
+    }
   }
 
   throw new Error(`Unsupported AI provider: ${provider}`);
