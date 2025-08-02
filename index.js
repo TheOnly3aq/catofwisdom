@@ -235,16 +235,27 @@ client.on("interactionCreate", async (interaction) => {
 
 client.on("ready", async () => {
   try {
-    const guild = await client.guilds.fetch(process.env.LOG_GUILD_ID);
+    const guild = client.guilds.cache.get(process.env.LOG_GUILD_ID);
+    if (!guild) {
+      console.error("❌ Guild not found in cache. Is the bot in that guild?");
+      return;
+    }
+
     await guild.commands.create(
       new SlashCommandBuilder()
         .setName("send")
         .setDescription("Send a DM to a user")
         .addStringOption((option) =>
-          option.setName("userid").setDescription("User ID to DM").setRequired(true)
+          option
+            .setName("userid")
+            .setDescription("User ID to DM")
+            .setRequired(true)
         )
         .addStringOption((option) =>
-          option.setName("message").setDescription("Message to send").setRequired(true)
+          option
+            .setName("message")
+            .setDescription("Message to send")
+            .setRequired(true)
         )
         .toJSON()
     );
