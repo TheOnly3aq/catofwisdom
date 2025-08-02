@@ -5,6 +5,7 @@ const {
   ActivityType,
   EmbedBuilder,
 } = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const { CohereClient } = require("cohere-ai");
 require("dotenv").config();
 
@@ -13,6 +14,8 @@ const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 const ALLOWED_GUILD_IDS = process.env.ALLOWED_GUILD_IDS
   ? process.env.ALLOWED_GUILD_IDS.split(",")
   : [];
+
+const GUILD_WHITELIST_ENABLED = process.env.GUILD_WHITELIST_ENABLED === "true";
 
 console.log("✅ Environment loaded. Starting bot...");
 
@@ -94,7 +97,7 @@ client.on("messageCreate", async (message) => {
     userInput = message.content.replace(new RegExp(`<@!?${client.user.id}>`, "g"), "").trim();
   }
   const userId = message.author.id;
-  if (ALLOWED_GUILD_IDS.length > 0 && isMention) {
+  if (GUILD_WHITELIST_ENABLED && ALLOWED_GUILD_IDS.length > 0 && isMention) {
     if (!ALLOWED_GUILD_IDS.includes(message.guild.id)) {
       console.warn(`❌ Message from unauthorized guild: ${message.guild.id}`);
       await message.reply("❌ This server is not authorized. Please use this bot in an authorized server.");
@@ -210,4 +213,43 @@ process.on("unhandledRejection", (error) => {
 client.login(process.env.DISCORD_TOKEN).catch((error) => {
   console.error("Failed to login to Discord:", error);
   process.exit(1);
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === "send") {
+    const userId = interaction.options.getString("userid");
+    const messageContent = interaction.options.getString("message");
+
+    try {
+      const user = await client.users.fetch(userId);
+      await user.send(messageContent);
+      await interaction.reply({ content: "✅ Message sent successfully.", ephemeral: true });
+    } catch (err) {
+      console.error("Failed to send DM:", err);
+      await interaction.reply({ content: "❌ Failed to send DM. Check the user ID and try again.", ephemeral: true });
+    }
+  }
+});
+
+client.on("ready", async () => {
+  try {
+    const guild = await client.guilds.fetch(process.env.LOG_GUILD_ID);
+    await guild.commands.create(
+      new SlashCommandBuilder()
+        .setName("send")
+        .setDescription("Send a DM to a user")
+        .addStringOption((option) =>
+          option.setName("userid").setDescription("User ID to DM").setRequired(true)
+        )
+        .addStringOption((option) =>
+          option.setName("message").setDescription("Message to send").setRequired(true)
+        )
+        .toJSON()
+    );
+    console.log("✅ Slash command '/send' registered.");
+  } catch (err) {
+    console.error("❌ Failed to register slash command:", err);
+  }
 });
