@@ -7,6 +7,7 @@ const {
 } = require("discord.js");
 const { SlashCommandBuilder } = require("discord.js");
 const { CohereClient } = require("cohere-ai");
+const OpenAI = require("openai");
 require("dotenv").config();
 
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
@@ -34,7 +35,58 @@ const cohere = new CohereClient({
   token: process.env.COHERE_API_KEY,
 });
 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 let sharedConversation = [];
+
+async function getAIResponse({ message, history, imageUrl = null }) {
+  const provider = process.env.AI_PROVIDER || "cohere";
+
+  if (provider === "cohere") {
+    const response = await cohere.chat({
+      model: process.env.COHERE_MODEL || "command-r-plus",
+      message,
+      chatHistory: history,
+      preamble:
+        "you are ancient cat spirit in discord bot. you answer all questions fully, but always sound annoyed, like you hate being asked anything. sometimes throw in an insult or sarcastic comment, but always give a real, complete answer to every question. never be polite or cheerful. your english is bad, broken grammar, weird phrasing, lowercase only. never refuse to answer, just be annoyed and maybe a bit rude.",
+      maxTokens: parseInt(process.env.MAX_TOKENS, 10) || 250,
+      temperature: 0.9,
+    });
+    return response.text;
+  }
+
+  if (provider === "openai") {
+    const messages = history.map(h => ({
+      role: h.role === "USER" ? "user" : "assistant",
+      content: h.message,
+    }));
+
+    if (imageUrl) {
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: message },
+          { type: "image_url", image_url: { url: imageUrl } },
+        ],
+      });
+    } else {
+      messages.push({ role: "user", content: message });
+    }
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages,
+      temperature: 0.9,
+      max_tokens: 250,
+    });
+
+    return response.choices[0].message.content;
+  }
+
+  throw new Error(`Unsupported AI provider: ${provider}`);
+}
 
 /**
  * Event handler that runs when the Discord client is ready.
@@ -127,19 +179,22 @@ client.on("messageCreate", async (message) => {
       sharedConversation.splice(0, 4);
     }
 
-    console.log("🧠 Sending request to Cohere...");
-    const response = await cohere.chat({
-      model: process.env.COHERE_MODEL || "command-r-plus",
+    let imageUrl = null;
+    if (message.attachments.size > 0) {
+      const attachment = message.attachments.first();
+      if (attachment.contentType && attachment.contentType.startsWith("image/")) {
+        imageUrl = attachment.url;
+      }
+    }
+
+    console.log("🧠 Sending request to AI provider...");
+    const botResponse = await getAIResponse({
       message: userInput,
-      chatHistory: sharedConversation,
-      preamble:
-        "you are ancient cat spirit in discord bot. you answer all questions fully, but always sound annoyed, like you hate being asked anything. sometimes throw in an insult or sarcastic comment, but always give a real, complete answer to every question. never be polite or cheerful. your english is bad, broken grammar, weird phrasing, lowercase only. never refuse to answer, just be annoyed and maybe a bit rude.",
-      maxTokens: parseInt(process.env.MAX_TOKENS, 10) || 250,
-      temperature: 0.9,
+      history: sharedConversation,
+      imageUrl,
     });
 
-    const botResponse = response.text;
-    console.log("✅ Cohere responded:", botResponse);
+    console.log("✅ AI provider responded:", botResponse);
 
     sharedConversation.push(
       { role: "USER", message: userInput },
