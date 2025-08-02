@@ -93,7 +93,7 @@ async function getAIResponse({ message, history, imageUrl = null }) {
   }
 
   if (provider === "gemini") {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
     const userPrompt = imageUrl
       ? [
