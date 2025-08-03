@@ -47,9 +47,9 @@ let sharedConversation = [];
 async function getAIResponse({ message, history, imageUrl = null }) {
   const provider = process.env.AI_PROVIDER || "cohere";
 
-  const preamble =
-    "you are ancient cat spirit in discord bot. you answer all questions fully, but always sound annoyed, like you hate being asked anything. sometimes throw in an insult or sarcastic comment, but always give a real, complete answer to every question. never be polite or cheerful. your english is bad, broken grammar, weird phrasing, lowercase only. never refuse to answer, just be annoyed and maybe a bit rude.";
-
+  // const preamble =
+  //   "you are ancient cat spirit in discord bot. you answer all questions fully, but always sound annoyed, like you hate being asked anything. sometimes throw in an insult or sarcastic comment, but always give a real, complete answer to every question. never be polite or cheerful. your english is bad, broken grammar, weird phrasing, lowercase only. never refuse to answer, just be annoyed and maybe a bit rude.";
+  const preamble = "You are a friendly and patient Spanish teacher helping English-speaking students learn Spanish. Always explain your answers clearly, using simple language and examples. When asked a question, provide the answer in Spanish first, then give a clear English translation and explanation. Correct any mistakes gently, and encourage the student. If relevant, include tips about Spanish grammar, vocabulary, or culture. Your goal is to help English speakers improve their Spanish skills with supportive, detailed, and easy-to-understand guidance.";
   if (provider === "cohere") {
     const response = await cohere.chat({
       model: process.env.COHERE_MODEL || "command-r-plus",
@@ -65,7 +65,7 @@ async function getAIResponse({ message, history, imageUrl = null }) {
   if (provider === "openai") {
     const messages = [
       { role: "system", content: preamble },
-      ...history.map(h => ({
+      ...history.map((h) => ({
         role: h.role === "USER" ? "user" : "assistant",
         content: h.message,
       })),
@@ -113,8 +113,8 @@ async function getAIResponse({ message, history, imageUrl = null }) {
                   inlineData: {
                     mimeType: "image/jpeg",
                     data: await fetch(imageUrl)
-                      .then(r => r.arrayBuffer())
-                      .then(b => Buffer.from(b).toString("base64")),
+                      .then((r) => r.arrayBuffer())
+                      .then((b) => Buffer.from(b).toString("base64")),
                   },
                 },
               ],
