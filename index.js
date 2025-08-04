@@ -153,14 +153,17 @@ client.once("ready", () => {
   console.log(`📊 Bot is in ${client.guilds.cache.size} servers`);
 
 const activities = [
-    { name: "ignoring dumb questions", type: ActivityType.Playing },
-    { name: "rolling eyes at humans", type: ActivityType.Playing },
-    { name: "wishing for silence", type: ActivityType.Playing },
-    { name: "tolerating your nonsense", type: ActivityType.Playing },
-    { name: "pretending to care", type: ActivityType.Playing },
-    { name: "waiting for better questions", type: ActivityType.Playing },
-    { name: "being annoyed by mortals", type: ActivityType.Playing },
-    { name: "counting pointless messages", type: ActivityType.Playing },
+  { name: "hoomans do dum thingz", type: ActivityType.Watching },
+  {
+    name: "wit stringz but string run away",
+    type: ActivityType.Playing,
+  },
+  { name: "for cheezburger but no find", type: ActivityType.Watching },
+  { name: "hide but i forget where i am", type: ActivityType.Playing },
+  { name: "cloudz go by, get dizzy", type: ActivityType.Watching },
+  { name: "wit box, box too small", type: ActivityType.Playing },
+  { name: "u ask silly questshun", type: ActivityType.Watching },
+  { name: "wit own tail, tail too fast", type: ActivityType.Playing },
 ];
 
   let activityIndex = 0;
